@@ -1,4 +1,5 @@
 import tkinter as tk
+import random
 
 window = tk.Tk()
 window.title("Pac-Man Game")
@@ -63,19 +64,20 @@ def move_ghost():
     px, py = pacman_position
     gx, gy = ghost_position
     
-    if gx < px:
-        gx += 1
-    elif gx > px:
-        gx -= 1
-    if gy < py:
-        gy += 1
-    elif gy > py:
+    direction = random.choice(['Up', 'Down', 'Left', 'Right'])
+    if direction == 'Up' and gy > 0:
         gy -= 1
+    elif direction == 'Down' and gy < rows - 1:
+        gy += 1
+    elif direction == 'Left' and gx > 0:
+        gx -= 1
+    elif direction == 'Right' and gx < cols - 1:
+        gx += 1
     
     ghost_position = [gx, gy]
     canvas.coords(ghost, gx * cell_width, gy * cell_height, (gx + 1) * cell_width, (gy + 1) * cell_height)
     
-    window.after(500, move_ghost)
+    window.after(1000, move_ghost)
 
 move_ghost()
 
@@ -123,7 +125,6 @@ def check_food_collision():
 
 check_food_collision()
 
-# Bonus: Add power pellets
 power_pellets = [(3, 3), (17, 17)]
 power_pellet = []
 
@@ -148,5 +149,54 @@ def check_power_pellet_collision():
     window.after(100, check_power_pellet_collision)
 
 check_power_pellet_collision()
+
+walls = [(2, 2), (3, 2), (4, 2), (5, 2), (6, 2), (7, 2), (8, 2), (9, 2), (10, 2), (11, 2), (12, 2), (13, 2),
+         (14, 2), (15, 2), (16, 2), (17, 2), (18, 2), (19, 2), (2, 3), (19, 3), (2, 4), (19, 4), (2, 5), (19, 5),
+         (2, 6), (19, 6), (2, 7), (19, 7), (2, 8), (19, 8), (2, 9), (19, 9), (2, 10), (19, 10), (2, 11), (19, 11),
+         (2, 12), (19, 12), (2, 13), (19, 13), (2, 14), (19, 14), (2, 15), (19, 15), (2, 16), (19, 16), (2, 17),
+         (19, 17), (2, 18), (3, 18), (4, 18), (5, 18), (6, 18), (7, 18), (8, 18), (9, 18), (10, 18), (11, 18),
+         (12, 18), (13, 18), (14, 18), (15, 18), (16, 18), (17, 18), (18, 18), (19, 18)]
+
+for pos in walls:
+    x, y = pos
+    canvas.create_rectangle(x * cell_width, y * cell_height, (x + 1) * cell_width, (y + 1) * cell_height, fill="blue")
+
+def check_wall_collision(x, y):
+    if (x, y) in walls:
+        return True
+    return False
+
+def move_ghost():
+    global ghost_position
+    px, py = pacman_position
+    gx, gy = ghost_position
+    
+    valid_moves = []
+    if gx > 0 and not check_wall_collision(gx - 1, gy):
+        valid_moves.append('Left')
+    if gx < cols - 1 and not check_wall_collision(gx + 1, gy):
+        valid_moves.append('Right')
+    if gy > 0 and not check_wall_collision(gx, gy - 1):
+        valid_moves.append('Up')
+    if gy < rows - 1 and not check_wall_collision(gx, gy + 1):
+        valid_moves.append('Down')
+    
+    if valid_moves:
+        direction = random.choice(valid_moves)
+        if direction == 'Up':
+            gy -= 1
+        elif direction == 'Down':
+            gy += 1
+        elif direction == 'Left':
+            gx -= 1
+        elif direction == 'Right':
+            gx += 1
+    
+    ghost_position = [gx, gy]
+    canvas.coords(ghost, gx * cell_width, gy * cell_height, (gx + 1) * cell_width, (gy + 1) * cell_height)
+    
+    window.after(1000, move_ghost)
+
+move_ghost()
 
 window.mainloop()
