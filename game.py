@@ -64,15 +64,26 @@ def move_ghost():
     px, py = pacman_position
     gx, gy = ghost_position
     
-    direction = random.choice(['Up', 'Down', 'Left', 'Right'])
-    if direction == 'Up' and gy > 0:
-        gy -= 1
-    elif direction == 'Down' and gy < rows - 1:
-        gy += 1
-    elif direction == 'Left' and gx > 0:
-        gx -= 1
-    elif direction == 'Right' and gx < cols - 1:
-        gx += 1
+    valid_moves = []
+    if gx > 0 and not check_wall_collision(gx - 1, gy):
+        valid_moves.append('Left')
+    if gx < cols - 1 and not check_wall_collision(gx + 1, gy):
+        valid_moves.append('Right')
+    if gy > 0 and not check_wall_collision(gx, gy - 1):
+        valid_moves.append('Up')
+    if gy < rows - 1 and not check_wall_collision(gx, gy + 1):
+        valid_moves.append('Down')
+    
+    if valid_moves:
+        direction = random.choice(valid_moves)
+        if direction == 'Up':
+            gy -= 1
+        elif direction == 'Down':
+            gy += 1
+        elif direction == 'Left':
+            gx -= 1
+        elif direction == 'Right':
+            gx += 1
     
     ghost_position = [gx, gy]
     canvas.coords(ghost, gx * cell_width, gy * cell_height, (gx + 1) * cell_width, (gy + 1) * cell_height)
@@ -198,5 +209,58 @@ def move_ghost():
     window.after(1000, move_ghost)
 
 move_ghost()
+
+# Additional features:
+
+# cherries as bonus points
+cherries_positions = [(7, 7), (13, 13)]
+cherries = []
+
+for pos in cherries_positions:
+    x, y = pos
+    cherries.append(canvas.create_oval(x * cell_width + cell_width // 4, y * cell_height + cell_height // 4,
+                                       (x + 1) * cell_width - cell_width // 4, (y + 1) * cell_height - cell_height // 4,
+                                       fill="orange"))
+
+def check_cherries_collision():
+    global score
+    px, py = pacman_position
+    
+    for idx, pos in enumerate(cherries_positions):
+        cx, cy = pos
+        if px == cx and py == cy:
+            score += 100
+            score_label.config(text=f"Score: {score}")
+            canvas.delete(cherries[idx])
+            cherries_positions[idx] = (-1, -1)
+            
+    window.after(100, check_cherries_collision)
+
+check_cherries_collision()
+
+# Add portals for teleportation
+portals = [(1, 10), (18, 10)]
+portal_colors = ["green", "purple"]
+portal_pairs = []
+
+for idx, pos in enumerate(portals):
+    x, y = pos
+    portal_pairs.append(canvas.create_rectangle(x * cell_width, y * cell_height, (x + 1) * cell_width, (y + 1) * cell_height, fill=portal_colors[idx]))
+
+def check_portal_collision():
+    px, py = pacman_position
+    
+    for idx, pos in enumerate(portals):
+        portal_x, portal_y = pos
+        if px == portal_x and py == portal_y:
+            target_portal = portal_pairs[(idx + 1) % 2]
+            x0, y0, x1, y1 = canvas.coords(target_portal)
+            canvas.move(pacman, x0 - px * cell_width, y0 - py * cell_height)
+            pacman_position[0] = (x0 - px * cell_width) // cell_width
+            pacman_position[1] = (y0 - py * cell_height) // cell_height
+            
+    window.after(100, check_portal_collision)
+
+check_portal_collision()
 
 window.mainloop()
