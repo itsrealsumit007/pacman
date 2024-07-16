@@ -98,4 +98,55 @@ def check_game_over():
 
 window.after(1000, check_game_over)
 
+food_positions = [(5, 5), (15, 15), (5, 15), (15, 5)]
+food = []
+
+for pos in food_positions:
+    x, y = pos
+    food.append(canvas.create_oval(x * cell_width + cell_width // 4, y * cell_height + cell_height // 4,
+                                   (x + 1) * cell_width - cell_width // 4, (y + 1) * cell_height - cell_height // 4,
+                                   fill="white"))
+
+def check_food_collision():
+    global score
+    px, py = pacman_position
+    
+    for idx, pos in enumerate(food_positions):
+        fx, fy = pos
+        if px == fx and py == fy:
+            score += 10
+            score_label.config(text=f"Score: {score}")
+            canvas.delete(food[idx])
+            food_positions[idx] = (-1, -1)
+            
+    window.after(100, check_food_collision)
+
+check_food_collision()
+
+# Bonus: Add power pellets
+power_pellets = [(3, 3), (17, 17)]
+power_pellet = []
+
+for pos in power_pellets:
+    x, y = pos
+    power_pellet.append(canvas.create_rectangle(x * cell_width + cell_width // 3, y * cell_height + cell_height // 3,
+                                                (x + 1) * cell_width - cell_width // 3, (y + 1) * cell_height - cell_height // 3,
+                                                fill="blue"))
+
+def check_power_pellet_collision():
+    global score
+    px, py = pacman_position
+    
+    for idx, pos in enumerate(power_pellets):
+        pp_x, pp_y = pos
+        if px == pp_x and py == pp_y:
+            score += 50
+            score_label.config(text=f"Score: {score}")
+            canvas.delete(power_pellet[idx])
+            power_pellets[idx] = (-1, -1)
+            
+    window.after(100, check_power_pellet_collision)
+
+check_power_pellet_collision()
+
 window.mainloop()
