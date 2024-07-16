@@ -11,6 +11,8 @@ canvas.pack()
 board_width = 800
 board_height = 600
 
+high_scores = []
+
 rows = 20
 cols = 20
 
@@ -26,25 +28,86 @@ pacman_position = [1, 1]
 pacman = canvas.create_oval(pacman_position[0] * cell_width, pacman_position[1] * cell_height,
                             (pacman_position[0] + 1) * cell_width, (pacman_position[1] + 1) * cell_height, fill="yellow")
 
+def load_high_scores():
+    global high_scores
+    try:
+        with open("high_scores.txt", "r") as file:
+            high_scores = [int(score.strip()) for score in file.readlines()]
+    except FileNotFoundError:
+        # Handle if file does not exist
+        high_scores = []
+
+# Function to save high scores to a file
+def save_high_scores():
+    with open("high_scores.txt", "w") as file:
+        for score in high_scores:
+            file.write(f"{score}\n")
+
+# Function to update high scores and display them
+def update_high_scores(score):
+    global high_scores
+    high_scores.append(score)
+    high_scores.sort(reverse=True)
+    high_scores = high_scores[:10]  # Keep only top 10 scores
+    save_high_scores()
+
+    # Display high scores
+    messagebox.showinfo("High Scores", f"Top Scores:\n\n" + "\n".join(f"{i+1}. {score}" for i, score in enumerate(high_scores)))
+
+# Modify check_game_over function to update high scores
+def check_game_over():
+    global high_scores, score
+    px, py = pacman_position
+    gx, gy = ghost_position
+    
+    if px == gx and py == gy:
+        canvas.create_text(board_width/2, board_height/2, text="Game Over", font=("Helvetica", 36), fill="white")
+        window.unbind_all('<KeyPress-Up>')
+        window.unbind_all('<KeyPress-Down>')
+        window.unbind_all('<KeyPress-Left>')
+        window.unbind_all('<KeyPress-Right>')
+        canvas.delete(pacman)
+        canvas.delete(ghost)
+        
+        # Update high scores
+        update_high_scores(score)
+
+load_high_scores()
+
 def move_pacman(event):
     global pacman_position
     x, y = pacman_position
     
     if event.keysym == 'Up':
-        if y > 0:
+        if y > 0 and not check_wall_collision(x, y - 1):
             y -= 1
     elif event.keysym == 'Down':
-        if y < rows - 1:
+        if y < rows - 1 and not check_wall_collision(x, y + 1):
             y += 1
     elif event.keysym == 'Left':
-        if x > 0:
+        if x > 0 and not check_wall_collision(x - 1, y):
             x -= 1
     elif event.keysym == 'Right':
-        if x < cols - 1:
+        if x < cols - 1 and not check_wall_collision(x + 1, y):
             x += 1
     
+    # Animate Pac-Man's movement
+    animate_pacman_movement(x, y)
+
+def animate_pacman_movement(x, y):
+    global pacman_position
+    current_x, current_y = pacman_position
+    dx = (x - current_x) * cell_width
+    dy = (y - current_y) * cell_height
+    canvas.move(pacman, dx, dy)
     pacman_position = [x, y]
-    update_pacman_position()
+
+    # Check for collisions with food, power pellets, cherries, and portals
+    check_food_collision()
+    check_power_pellet_collision()
+    check_cherries_collision()
+    check_portal_collision()
+
 
 def update_pacman_position():
     x, y = pacman_position
@@ -85,10 +148,23 @@ def move_ghost():
         elif direction == 'Right':
             gx += 1
     
+    # Animate Ghost's movement
+    animate_ghost_movement(gx, gy)
+
+def animate_ghost_movement(gx, gy):
+    global ghost_position
+    current_gx, current_gy = ghost_position
+    dx = (gx - current_gx) * cell_width
+    dy = (gy - current_gy) * cell_height
+    canvas.move(ghost, dx, dy)
     ghost_position = [gx, gy]
-    canvas.coords(ghost, gx * cell_width, gy * cell_height, (gx + 1) * cell_width, (gy + 1) * cell_height)
-    
+
+    # Check for collisions with Pac-Man
+    check_game_over()
+
+    # Re-schedule ghost movement
     window.after(1000, move_ghost)
+
 
 move_ghost()
 
